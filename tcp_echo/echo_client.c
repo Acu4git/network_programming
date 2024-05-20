@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define PORT 80 /* ポート番号 ← 実験するとき書き換える、例えば、50000 */
+#define PORT 7 /* ポート番号 ← 実験するとき書き換える、例えば、50000 */
 #define S_BUFSIZE 100 /* 送信用バッファサイズ */
 #define R_BUFSIZE 100 /* 受信用バッファサイズ */
 

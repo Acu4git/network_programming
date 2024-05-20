@@ -1,6 +1,0 @@
-{
-  "files.associations": {
-    "netdb.h": "c"
-  },
-  "editor.formatOnSave": true,
-}

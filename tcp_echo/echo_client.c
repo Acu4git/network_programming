@@ -51,6 +51,7 @@ int main() {
   /* キーボードから文字列を入力する */
   fgets(s_buf, S_BUFSIZE, stdin);
   strsize = strlen(s_buf);
+  printf("strsize = %d\n", strsize);
 
   /* 文字列をサーバに送信する */
   if (send(sock, s_buf, strsize, 0) == -1) {
@@ -63,6 +64,7 @@ int main() {
     fprintf(stderr, "recv()");
     exit(EXIT_FAILURE);
   }
+  printf("strsize = %d\n", strsize);
   r_buf[strsize] = '\0';
 
   printf("%s", r_buf); /* 受信した文字列を画面に書く */

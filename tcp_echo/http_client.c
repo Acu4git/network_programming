@@ -154,13 +154,22 @@ int main(int argc, char *argv[]) {
     printf("\033[32m");
     printf("Success!\n");
   }
-  printf("\033[0m");
   printf("Status Code: %d\n", statusCode);
   printf("Status Comment: %s\n", message);
-  putchar('\n');
+  printf("\033[0m");
 
-  printf("Content-Length: %d\n", getContentLength(r_buf));
-  printf("Server: %s\n", getServerName(r_buf));
+  int contentLength = getContentLength(r_buf);
+  if (contentLength == -1)
+    printf("\033[35mContent-Length header is not exist.\n");
+  else
+    printf("Content-Length: %d\n", getContentLength(r_buf));
+
+  char *serverName = getServerName(r_buf);
+  if (serverName == NULL)
+    printf("\033[35mServer header is not exist.");
+  else
+    printf("Server: %s\n", getServerName(r_buf));
+  printf("\033[0m");
 
   close(tcpsock); /* ソケットを閉じる */
   exit(EXIT_SUCCESS);

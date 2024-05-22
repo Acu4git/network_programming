@@ -1,10 +1,3 @@
-/**
- * [Usage]
- *
- * ./tcp_client <target_server>
- * or
- * ./tcp_client <target_server> <proxy_server> <proxy_port>
- */
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -14,60 +7,23 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define PORT 80
-#define BUFSIZE 1024 /* バッファサイズ */
+#define PORT 7 /* ポート番号 ← 実験するとき書き換える、例えば、50000 */
+#define S_BUFSIZE 100 /* 送信用バッファサイズ */
+#define R_BUFSIZE 100 /* 受信用バッファサイズ */
 
-int isUnderProxy();
-char *extractServerName(char *);
-char *extractPath(char *);
-int getContentLength(char *);
-
-int main(int argc, char *argv[]) {
-  /*プロキシ環境かどうか確認*/
-  if (!isUnderProxy() && argc != 2) {
-    fprintf(stderr, "Error : invalid arguments without proxy\n");
-    fprintf(stderr, "Usage : ./tcp_client <target_server>\n");
-    exit(1);
-  }
-  if (isUnderProxy() && argc != 4) {
-    fprintf(stderr, "Error : invalid arguments under proxy\n");
-    fprintf(
-        stderr,
-        "Usage : ./tcp_client <target_server> <proxy_server> <proxy_port>\n");
-    exit(1);
-  }
-
+int main() {
   struct hostent *server_host;
   struct sockaddr_in server_adrs;
 
-  char s_buf[BUFSIZE], r_buf[BUFSIZE];
+  int sock;
+
+  char servername[] = "localhost"; /* ←実験するとき書き換える */
+                                   /* char servername[] = "192.168.1.10"; */
+  char s_buf[S_BUFSIZE], r_buf[R_BUFSIZE];
   int strsize;
 
-  int tcpsock, port = PORT;
-  char *servername, *proxyname = NULL, *url = argv[1], *path;
-  if ((servername = extractServerName(url)) == NULL) {
-    fprintf(stderr, "Error : cannot find server name\n");
-    exit(1);
-  }
-  path = extractPath(url);
-
-  // printf("servername = %s\n", servername);
-
-  if (argc == 4) {
-    proxyname = argv[2];   // プロキシサーバー名
-    port = atoi(argv[3]);  // プロキシポート
-  }
-
   /* サーバ名をアドレス(hostent構造体)に変換する */
-  switch (argc) {
-    case 2:
-      server_host = gethostbyname(servername);
-      break;
-    case 4:
-      server_host = gethostbyname(proxyname);
-      break;
-  }
-  if (server_host == NULL) {
+  if ((server_host = gethostbyname(servername)) == NULL) {
     fprintf(stderr, "gethostbyname()");
     exit(EXIT_FAILURE);
   }
@@ -75,113 +31,45 @@ int main(int argc, char *argv[]) {
   /* サーバの情報をsockaddr_in構造体に格納する */
   memset(&server_adrs, 0, sizeof(server_adrs));
   server_adrs.sin_family = AF_INET;
-  server_adrs.sin_port = htons(port);
+  server_adrs.sin_port = htons(PORT);
   memcpy(&server_adrs.sin_addr, server_host->h_addr_list[0],
          server_host->h_length);
 
   /* ソケットをSTREAMモードで作成する */
-  if ((tcpsock = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
+  if ((sock = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
     fprintf(stderr, "socket()");
     exit(EXIT_FAILURE);
   }
 
   /* ソケットにサーバの情報を対応づけてサーバに接続する */
-  if (connect(tcpsock, (struct sockaddr *)&server_adrs, sizeof(server_adrs)) ==
+  if (connect(sock, (struct sockaddr *)&server_adrs, sizeof(server_adrs)) ==
       -1) {
     fprintf(stderr, "connect");
     exit(EXIT_FAILURE);
   }
 
-  switch (argc) {
-    case 2:
-      snprintf(s_buf, BUFSIZE,
-               "GET %s HTTP/1.1\r\n"
-               "HOST: %s\r\n",
-               path, servername);
-      break;
-    case 4:
-      snprintf(s_buf, BUFSIZE,
-               "GET %s HTTP/1.1\r\n"
-               "HOST: %s\r\n",
-               url, servername);
-      break;
-  }
-
+  /* キーボードから文字列を入力する */
+  fgets(s_buf, S_BUFSIZE, stdin);
   strsize = strlen(s_buf);
+  printf("strsize = %d\n", strsize);
 
   /* 文字列をサーバに送信する */
-  if (send(tcpsock, s_buf, strsize, 0) == -1) {
+  if (send(sock, s_buf, strsize, 0) == -1) {
     fprintf(stderr, "send()");
     exit(EXIT_FAILURE);
   }
 
-  send(tcpsock, "\r\n", 2, 0);
-
   /* サーバから文字列を受信する */
-  if ((strsize = recv(tcpsock, r_buf, BUFSIZE, 0)) == -1) {
+  if ((strsize = recv(sock, r_buf, R_BUFSIZE - 1, 0)) == -1) {
     fprintf(stderr, "recv()");
     exit(EXIT_FAILURE);
   }
+  printf("strsize = %d\n", strsize);
   r_buf[strsize] = '\0';
 
-  printf("%s\n", r_buf); /* 受信した文字列を画面に書く */
+  printf("%s", r_buf); /* 受信した文字列を画面に書く */
 
-  close(tcpsock); /* ソケットを閉じる */
+  close(sock); /* ソケットを閉じる */
+
   exit(EXIT_SUCCESS);
-}
-
-// isUnderProxy関数は，プロキシ環境下であるときに1を返し，そうでない場合は0を返す
-int isUnderProxy() {
-  int res = 0;
-  static char *envList[] = {"http_proxy", "https_proxy", "HTTP_PROXY",
-                            "HTTPS_PROXY"};
-
-  for (int i = 0; i < 4; i++) {
-    if (getenv(envList[i]) != NULL) res = 1;
-  }
-
-  return res;
-}
-
-// http://www.hogehoge.co.jp/
-// のようなファイルからホスト部(www.hogehoge.co.jp)を取り出す
-char *extractServerName(char *url) {
-  char *res = NULL;
-  int i = 0, protcol_len = 0, len = 0, flag = 0, start;
-  while (url[i] != '\0') {
-    if (i > 3 && url[i - 2] == '/' && url[i - 1] == '/') {
-      flag = 1;
-      protcol_len = i;
-    }
-    if (flag) {
-      if (url[i] == '/' || url[i] == '\0') break;
-      if (len == 0) start = i;
-      len++;
-    }
-    i++;
-  }
-  res = (char *)malloc(sizeof(char) * (len + 1));
-  for (int m = start; m < start + len; m++) res[m - protcol_len] = url[m];
-  res[len] = '\0';
-  return res;
-}
-
-char *extractPath(char *url) {
-  char *res = "/";
-  int i = 0, cnt = 0;
-  while (url[i] != '\0') {
-    if (url[i] == '/') cnt++;
-    if (cnt == 3) {
-      res = &url[i];
-      break;
-    }
-    i++;
-  }
-
-  return res;
-}
-
-int getContentLentgth(char *res) {
-  char *key = "Content-Length";
-  return -1;
 }

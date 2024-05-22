@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
   }
   r_buf[strsize] = '\0';
 
-  // printf("%s\n", r_buf); /* 受信した文字列を画面に書く */
+  printf("%s\n", r_buf); /* 受信した文字列を画面に書く */
 
   char *httpStatus = getHTTPStatus(r_buf);
   int statusCode = getHTTPStatusCode(httpStatus);
@@ -162,13 +162,13 @@ int main(int argc, char *argv[]) {
   if (contentLength == -1)
     printf("\033[35mContent-Length header is not exist.\n");
   else
-    printf("Content-Length: %d\n", getContentLength(r_buf));
+    printf("\033[36mContent-Length: %d\n", getContentLength(r_buf));
 
   char *serverName = getServerName(r_buf);
   if (serverName == NULL)
     printf("\033[35mServer header is not exist.");
   else
-    printf("Server: %s\n", getServerName(r_buf));
+    printf("\033[36mServer: %s\n", getServerName(r_buf));
   printf("\033[0m");
 
   close(tcpsock); /* ソケットを閉じる */
@@ -270,7 +270,7 @@ char *getHTTPStatusMessage(const char *statusStr) {
   statusStr -= len;
 
   res = (char *)malloc(sizeof(char) * (len + 1));
-  snprintf(res, len, "%s", statusStr);
+  snprintf(res, len + 1, "%s", statusStr);
   return res;
 }
 
@@ -305,6 +305,6 @@ char *getServerName(const char *str) {
   pos -= len;
 
   res = (char *)malloc(sizeof(char) * (len + 1));
-  snprintf(res, len, "%s", pos);
+  snprintf(res, len + 1, "%s", pos);
   return res;
 }

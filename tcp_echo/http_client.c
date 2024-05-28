@@ -6,8 +6,8 @@
  * ./http_client http://abehiroshi.la.coocan.jp/
  *
  * (2)プロキシ環境下(CISのプロキシサーバ)
- * ./http_client http://www.is.kit.ac.jp/ cis.kit.ac.jp 8080
- * ./http_client http://abehiroshi.la.coocan.jp/ cis.kit.ac.jp 8080
+ * ./http_client http://www.is.kit.ac.jp/ proxy.cis.kit.ac.jp 8080
+ * ./http_client http://abehiroshi.la.coocan.jp/ proxy.cis.kit.ac.jp 8080
  */
 #include <netdb.h>
 #include <netinet/in.h>
@@ -19,7 +19,7 @@
 #include <unistd.h>
 
 #define PORT 80
-#define BUFSIZE 16384 /* バッファサイズ */
+#define BUFSIZE 1024 /* バッファサイズ */
 
 int isUnderProxy();
 char *extractHostName(char *);
@@ -40,9 +40,9 @@ int main(int argc, char *argv[]) {
   }
   if (isUnderProxy() && argc != 4) {
     fprintf(stderr, "Error : invalid arguments under proxy\n");
-    fprintf(
-        stderr,
-        "Usage : ./http_client <target_server> <proxy_server> <proxy_port>\n");
+    fprintf(stderr,
+            "Usage : ./http_client <target_server> <proxy_server> "
+            "<proxy_port>\n");
     exit(1);
   }
 
@@ -104,13 +104,13 @@ int main(int argc, char *argv[]) {
   switch (argc) {
     case 2:
       snprintf(s_buf, BUFSIZE,
-               "GET %s HTTP/1.1\r\n"
+               "HEAD %s HTTP/1.1\r\n"
                "HOST: %s\r\n",
                path, servername);
       break;
     case 4:
       snprintf(s_buf, BUFSIZE,
-               "GET %s HTTP/1.1\r\n"
+               "HEAD %s HTTP/1.1\r\n"
                "HOST: %s\r\n",
                url, servername);
       break;
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
   }
   r_buf[strsize] = '\0';
 
-  printf("%s\n", r_buf); /* 受信した文字列を画面に書く */
+  // printf("%s\n", r_buf); /* 受信した文字列を画面に書く */
 
   char *httpStatus = getHTTPStatus(r_buf);
   int statusCode = getHTTPStatusCode(httpStatus);
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
 
   char *serverName = getServerName(r_buf);
   if (serverName == NULL)
-    printf("\033[35mServer header is not exist.");
+    printf("\033[35mServer header is not exist.\n");
   else
     printf("\033[36mServer: %s\n", getServerName(r_buf));
   printf("\033[0m");

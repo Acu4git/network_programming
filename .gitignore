@@ -3,4 +3,6 @@
 !*.*
 
 .vscode/
+*.a
+*.o
 test.c

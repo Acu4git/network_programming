@@ -3,6 +3,7 @@
 !*.*
 
 .vscode/
+!Makefile
 *.a
 *.o
 test.c

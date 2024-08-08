@@ -1,9 +1,14 @@
 #
-# Makefile for mynet
+# Makefile for libmynet
 #
-OBJS = init_tcpclient.o init_tcpserver.o other.o
+OBJS = init_tcpserver.o init_tcpclient.o other.o
 AR = ar -qc
 
 libmynet.a : ${OBJS}
 	${RM} $@
 	${AR} $@ ${OBJS}
+
+${OBJS}: mynet.h
+
+clean:
+	${RM} *.o

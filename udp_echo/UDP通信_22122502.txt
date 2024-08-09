@@ -1,0 +1,20 @@
+受信バッファ容量を30とした場合を考える．
+まず，UDPサーバーをあるポートで起動し，次にUDPクライアントを起動してサーバーに
+メッセージを送る．このとき，受信バッファ容量を超えるメッセージを送るとクライアント側では
+以下のようになる．
+
+shaun@kwgc:~/doc/kit/network_programming/udp$ ./echo_client1 localhost 3000
+Hello myname is Eishu kawaguchi. My hobby is programming. Nice to meet you!
+Hello myname is Eishu kawaguchshaun@kwgc:~/doc/kit/network_programming/udp$ ./echo_client1 localhost 3000
+hello
+hello
+shaun@kwgc:~/doc/kit/network_programming/udp$
+
+この通り，送信したメッセージの途中までしか受信されないことが分かる．
+また，クライアントを再起動してメッセージを送ると，メッセージがそのまま帰ってくる．
+これは，サーバーとクライアント間でコネクションが確立されておらず，バッファに残ったメッセージが
+クライアントに返ることがないためだと考えられる．
+
+また，受信側で十分に大きい受信バッファを用意すればよいが，このサイズには上限がある．
+UDPパケットデータの最大長は65535バイトであり，このうち20バイトはIPv4ヘッダ，8バイトはUDPヘッダとして使われる．
+よって，残りの65507バイトが受信できる最大のバッファサイズである．

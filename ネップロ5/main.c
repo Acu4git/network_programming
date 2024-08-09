@@ -1,21 +1,23 @@
+#include <arpa/inet.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <arpa/inet.h>
-#include <signal.h>
+
+#include "client.h"
 #include "mynet.h"
 #include "server.h"
-#include "client.h"
 
-//最大サイズなどを定義
+// 最大サイズなどを定義
 #define USERNAME_SIZE 15
 #define DEFAULT_PORT 50001
 #define BUFFER_SIZE 512
 #define MAX_RETRIES 3
 
-//エラーハンドリング用
+// エラーハンドリング用
 void error(const char *msg);
 
 int main(int argc, char *argv[]) {
@@ -26,8 +28,8 @@ int main(int argc, char *argv[]) {
 
     char username[USERNAME_SIZE];
     strncpy(username, argv[1], USERNAME_SIZE);
-    username[USERNAME_SIZE - 1] = '\0'; 
-    //3つ目のコマンドライン引数がなければデフォルトポート（50001）を採用
+    username[USERNAME_SIZE - 1] = '\0';
+    // 3つ目のコマンドライン引数がなければデフォルトポート（50001）を採用
     int port = (argc == 3) ? atoi(argv[2]) : DEFAULT_PORT;
 
     int sock;
@@ -39,7 +41,8 @@ int main(int argc, char *argv[]) {
         error("socket() error");
     }
 
-    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (void *)&broadcast, sizeof(broadcast)) < 0) {
+    if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (void *)&broadcast,
+                   sizeof(broadcast)) < 0) {
         error("setsockopt() error");
     }
 
@@ -55,7 +58,9 @@ int main(int argc, char *argv[]) {
     // "HELO"パケットを送信
     while (retries < MAX_RETRIES && !server_found) {
         strcpy(buffer, "HELO");
-        if (sendto(sock, buffer, strlen(buffer), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr)) < 0) {
+        if (sendto(sock, buffer, strlen(buffer), 0,
+                   (struct sockaddr *)&broadcast_addr,
+                   sizeof(broadcast_addr)) < 0) {
             error("sendto() error");
         }
 
@@ -71,11 +76,12 @@ int main(int argc, char *argv[]) {
         if (retval == -1) {
             error("select() error");
         } else if (retval > 0) {
-            if (recvfrom(sock, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&server_addr, &addr_len) < 0) {
+            if (recvfrom(sock, buffer, BUFFER_SIZE, 0,
+                         (struct sockaddr *)&server_addr, &addr_len) < 0) {
                 error("recvfrom() error");
             }
             buffer[BUFFER_SIZE - 1] = '\0';
-            //!HEREが帰ってきたら、server_foundに1を加算して87行目でモードチェンジ
+            //! HEREが帰ってきたら、server_foundに1を加算して87行目でモードチェンジ
             if (strcmp(buffer, "HERE") == 0) {
                 server_found = 1;
             }
